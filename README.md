@@ -63,6 +63,7 @@ or path, which gives `syntax error at or near "supabase"`), and click **Run**. D
 
 5. `supabase/migrations/0005_song_history.sql` – song history (Phase 3): full snapshots on every save, and restore
 6. `supabase/migrations/0006_search.sql` – library search across lyrics, and "recently used" sorting
+7. `supabase/migrations/0007_team_admin.sql` – team tools: last-admin guard and removing members
 
 (If you already ran the earlier ones, just run the new file(s).)
 
@@ -79,7 +80,9 @@ Nobody can join without an invite code, and only admins can create codes, so the
 2. Open your site's `/join` page and sign up with that code.
 3. Back in `bootstrap.sql`, put your email in **step 3** and run it to make yourself admin.
 
-Give teammates the same code (a code can be used by many people; deactivate it later by setting `active = false`).
+Give teammates the same code (a code can be used by many people). Once you're an admin you don't need SQL for
+codes any more: the **Team** page lets you create a code, copy an invite message, turn codes on or off, or replace
+the current code with a new one.
 
 ## 4. Set environment variables
 
