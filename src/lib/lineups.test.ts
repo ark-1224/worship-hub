@@ -8,6 +8,7 @@ import {
   parseItemPatch,
   parseLineupForm,
   splitUpcomingPast,
+  timeAgo,
   todayIn,
 } from "./lineups";
 
@@ -86,6 +87,31 @@ describe("splitUpcomingPast", () => {
 
   it("handles an empty list", () => {
     expect(splitUpcomingPast([], "2026-10-04")).toEqual({ upcoming: [], past: [] });
+  });
+});
+
+describe("timeAgo", () => {
+  const now = new Date("2026-10-04T12:00:00Z").getTime();
+  const ago = (ms: number) => new Date(now - ms).toISOString();
+  const SEC = 1000, MIN = 60 * SEC, HOUR = 60 * MIN, DAY = 24 * HOUR;
+
+  it("says 'just now' for the last few seconds, and for a clock that runs slightly fast", () => {
+    expect(timeAgo(ago(5 * SEC), now)).toBe("just now");
+    expect(timeAgo(ago(40 * SEC), now)).toBe("just now");
+    expect(timeAgo(ago(-10 * SEC), now)).toBe("just now");
+  });
+  it("counts minutes, hours and days", () => {
+    expect(timeAgo(ago(2 * MIN), now)).toBe("2 min ago");
+    expect(timeAgo(ago(59 * MIN), now)).toBe("59 min ago");
+    expect(timeAgo(ago(3 * HOUR), now)).toBe("3 hr ago");
+    expect(timeAgo(ago(30 * HOUR), now)).toBe("yesterday");
+    expect(timeAgo(ago(4 * DAY), now)).toBe("4 days ago");
+  });
+  it("switches to a plain date after a week", () => {
+    expect(timeAgo(ago(10 * DAY), now)).toBe("Sep 24, 2026");
+  });
+  it("returns an empty string for a bad date", () => {
+    expect(timeAgo("not a date", now)).toBe("");
   });
 });
 

@@ -10,7 +10,8 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   addLineupItem,
   removeLineupItem,
@@ -18,13 +19,17 @@ import {
   updateLineupItem,
 } from "@/app/(app)/lineups/[id]/actions";
 import { moveItem, type ItemPatch } from "@/lib/lineups";
+import { createClient } from "@/lib/supabase/client";
 import { AddSongDialog } from "./AddSongDialog";
 import { LineupItemRow } from "./LineupItemRow";
 import type { EditorItem, Member, PickerSong } from "./types";
 
-// The editable song list of a lineup. Changes show instantly on screen and are
-// saved in the background; if a save fails, the screen goes back to how it was
-// and a message explains.
+// The editable song list of a lineup.
+//
+//  * Your changes show instantly and are saved in the background; if a save
+//    fails, the list goes back to how it was and a message explains.
+//  * Other people's changes arrive live (Supabase Realtime): when the lineup is
+//    changed, we ask the server for the fresh list and show it.
 export function LineupEditor({
   lineupId,
   initialItems,
@@ -32,13 +37,70 @@ export function LineupEditor({
   members,
 }: {
   lineupId: string;
-  initialItems: EditorItem[];
+  initialItems: EditorItem[]; // the server's current list; new data arrives after router.refresh()
   songs: PickerSong[];
   members: Member[];
 }) {
+  const router = useRouter();
   const [items, setItems] = useState(initialItems);
+  const [seenFromServer, setSeenFromServer] = useState(initialItems);
+  const [saving, setSaving] = useState(0); // how many of MY saves are in flight
+  const [live, setLive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+
+  // New list from the server? Show it, unless I'm in the middle of saving
+  // something (its own refresh, below, catches up afterwards). Setting state
+  // during render like this is React's recommended way to react to a changed prop.
+  if (initialItems !== seenFromServer) {
+    setSeenFromServer(initialItems);
+    if (saving === 0) setItems(initialItems);
+  }
+
+  // Ask the server for fresh data. Debounced: reordering touches several rows,
+  // and each one sends its own "changed" message.
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const requestRefresh = useCallback(() => {
+    clearTimeout(refreshTimer.current);
+    refreshTimer.current = setTimeout(() => router.refresh(), 300);
+  }, [router]);
+
+  // Listen for changes to this lineup. Every change to its songs also updates
+  // the lineup row itself (a trigger in 0004_lineups.sql), so watching that one
+  // row is enough. The database only sends these to logged-in members (RLS).
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`lineup:${lineupId}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "lineups", filter: `id=eq.${lineupId}` },
+        requestRefresh,
+      )
+      .subscribe((status) => setLive(status === "SUBSCRIBED"));
+
+    // A phone that slept may have missed messages: catch up when it wakes.
+    const onVisible = () => document.visibilityState === "visible" && requestRefresh();
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      clearTimeout(refreshTimer.current);
+      void supabase.removeChannel(channel);
+    };
+  }, [lineupId, requestRefresh]);
+
+  // Wraps each of my saves: while one is in flight, incoming server data is
+  // held back so it can't undo what I just did; afterwards, sync with the server.
+  const track = async <T,>(work: () => Promise<T>): Promise<T> => {
+    setSaving((n) => n + 1);
+    try {
+      return await work();
+    } finally {
+      setSaving((n) => n - 1);
+      requestRefresh();
+    }
+  };
 
   // Drag with a mouse or finger (5px before it counts, so taps still work) or
   // with the keyboard (Space to pick up, arrows to move, Space to drop).
@@ -58,7 +120,7 @@ export function LineupEditor({
     const previous = items;
     setError(null);
     setItems(next);
-    const result = await reorderLineupItems(lineupId, next.map((i) => i.id));
+    const result = await track(() => reorderLineupItems(lineupId, next.map((i) => i.id)));
     if (!result.ok) fail(previous, result.error);
   };
 
@@ -84,7 +146,7 @@ export function LineupEditor({
             },
       ),
     );
-    const result = await updateLineupItem(id, patch);
+    const result = await track(() => updateLineupItem(id, patch));
     if (!result.ok) fail(previous, result.error);
   };
 
@@ -94,38 +156,49 @@ export function LineupEditor({
     const previous = items;
     setError(null);
     setItems(items.filter((i) => i.id !== id));
-    const result = await removeLineupItem(id);
+    const result = await track(() => removeLineupItem(id));
     if (!result.ok) fail(previous, result.error);
   };
 
   const add = async (song: PickerSong) => {
     setError(null);
-    const result = await addLineupItem(lineupId, song.id);
+    const result = await track(() => addLineupItem(lineupId, song.id));
     if (!result.ok) {
       setError(result.error);
       return;
     }
-    setItems((current) => [
-      ...current,
-      {
-        id: result.id,
-        songId: song.id,
-        title: song.title,
-        artist: song.artist,
-        originalKey: song.originalKey,
-        keyOverride: null,
-        leaderId: null,
-        note: "",
-      },
-    ]);
+    // If a live update already brought this song in, don't add it twice.
+    setItems((current) =>
+      current.some((i) => i.id === result.id)
+        ? current
+        : [
+            ...current,
+            {
+              id: result.id,
+              songId: song.id,
+              title: song.title,
+              artist: song.artist,
+              originalKey: song.originalKey,
+              keyOverride: null,
+              leaderId: null,
+              note: "",
+            },
+          ],
+    );
   };
 
   return (
     <section className="space-y-3" aria-label="Songs in this lineup">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-sm font-bold uppercase tracking-wide text-stone-500">
-          Songs ({items.length})
-        </h2>
+        <div>
+          <h2 className="text-sm font-bold uppercase tracking-wide text-stone-500">Songs ({items.length})</h2>
+          <p
+            className={`text-xs ${live ? "text-emerald-700" : "text-stone-400"}`}
+            title={live ? "Changes by others appear here automatically" : "Trying to connect for live updates"}
+          >
+            {live ? "● Live" : "○ Connecting…"}
+          </p>
+        </div>
         <button type="button" onClick={() => setPickerOpen(true)} className="btn-primary">
           + Add song
         </button>

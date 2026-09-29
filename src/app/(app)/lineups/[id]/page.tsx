@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { ArchiveLineupButton } from "@/components/lineups/ArchiveLineupButton";
+import { LastEdited } from "@/components/lineups/LastEdited";
 import { LineupEditor } from "@/components/lineups/LineupEditor";
 import { LineupForm } from "@/components/lineups/LineupForm";
 import type { EditorItem, Member, PickerSong } from "@/components/lineups/types";
@@ -23,13 +25,14 @@ export default async function LineupPage({ params }: { params: Promise<{ id: str
 
   const supabase = await createClient();
 
-  // The lineup with its songs in order, plus what the editor needs:
-  // the library (for the "Add song" picker) and the team (for "Leads").
+  // The lineup with its songs in order and who last edited it, plus what the
+  // editor needs: the library (for the "Add song" picker) and the team (for "Leads").
+  // `profiles!updated_by` says which of the two links to profiles we mean.
   const [lineupResult, songsResult, membersResult] = await Promise.all([
     supabase
       .from("lineups")
       .select(
-        "*, lineup_items(id, position, key_override, leader_id, note, song:songs(id, title, artist, original_key))",
+        "*, editor:profiles!updated_by(name), lineup_items(id, position, key_override, leader_id, note, song:songs(id, title, artist, original_key))",
       )
       .eq("id", id)
       .order("position", { referencedTable: "lineup_items" })
@@ -72,12 +75,19 @@ export default async function LineupPage({ params }: { params: Promise<{ id: str
 
   return (
     <div className="space-y-5">
+      {lineup.archived_at && (
+        <p role="status" className="rounded-lg border border-stone-300 bg-stone-100 px-3 py-2 text-sm text-stone-700">
+          This lineup is archived, so it no longer shows in the lists. An admin can restore it.
+        </p>
+      )}
+
       <header className="space-y-1">
         <h1 className="text-2xl font-bold">{lineup.title}</h1>
         <p className="text-stone-600">
           {when}
           {lineup.service_type ? ` · ${lineup.service_type}` : ""}
         </p>
+        <LastEdited name={lineup.editor?.name ?? null} updatedAt={lineup.updated_at} />
         {lineup.notes && (
           <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm whitespace-pre-line text-amber-900">
             {lineup.notes}
@@ -102,6 +112,8 @@ export default async function LineupPage({ params }: { params: Promise<{ id: str
           />
         </div>
       </details>
+
+      {!lineup.archived_at && <ArchiveLineupButton lineupId={lineup.id} title={lineup.title} />}
     </div>
   );
 }

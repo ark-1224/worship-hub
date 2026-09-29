@@ -3,14 +3,25 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SongViewer } from "@/components/songs/SongViewer";
 import { YouTubePlayer } from "@/components/songs/YouTubePlayer";
+import { KEY_PATTERN } from "@/lib/chords/keys";
 import { isUuid } from "@/lib/songs";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Song" };
 
-export default async function SongPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function SongPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ key?: string }>;
+}) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
+
+  // Lineups link here as /songs/<id>?key=A to open the song in that service's key.
+  const { key } = await searchParams;
+  const lineupKey = key && KEY_PATTERN.test(key) ? key : null;
 
   const supabase = await createClient();
   const { data: song } = await supabase.from("songs").select("*").eq("id", id).maybeSingle();
@@ -74,7 +85,13 @@ export default async function SongPage({ params }: { params: Promise<{ id: strin
         </a>
       )}
 
-      <SongViewer chordText={song.chord_text ?? ""} originalKey={song.original_key} />
+      {/* key= restarts the viewer if you open the same song in a different key */}
+      <SongViewer
+        key={lineupKey ?? "original"}
+        chordText={song.chord_text ?? ""}
+        originalKey={song.original_key}
+        initialKey={lineupKey}
+      />
     </article>
   );
 }

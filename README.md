@@ -120,6 +120,13 @@ npm run build     # production build
 3. Under **Environment Variables** add the three variables from step 4. Use your final Vercel URL for `NEXT_PUBLIC_SITE_URL`.
 4. Deploy. Then in Supabase → Authentication → URL Configuration, set **Site URL** to the Vercel URL and add `https://YOUR-SITE.vercel.app/**` to Redirect URLs.
 
+## Live lineup updates
+
+The lineup page updates by itself when someone else changes the lineup (Supabase Realtime), and shows
+"● Live" under "Songs" when it's connected. If it stays on "○ Connecting…", check that `0004_lineups.sql` ran
+completely: its last step adds the lineup tables to Supabase's `supabase_realtime` publication. You can also
+check in the dashboard under Database → Publications.
+
 ## How permissions work (short version)
 
 - The **database** (Row Level Security in `0002_auth_and_rls.sql`) decides who can do what, not the UI: only logged-in members can read or write; only admins can manage invite codes and change roles; songs and lineups are never hard-deleted (soft-delete with `archived_at`).

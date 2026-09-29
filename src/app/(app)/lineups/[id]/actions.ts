@@ -56,6 +56,32 @@ export async function updateLineupItem(itemId: string, patch: ItemPatch): Promis
   return { ok: true };
 }
 
+export type ArchiveState = { error?: string } | undefined;
+
+/**
+ * Moves a whole lineup to the archive (a "soft delete": nothing is erased).
+ * Any member can archive; only an admin can restore it (enforced in 0002).
+ */
+export async function archiveLineup(
+  lineupId: string,
+  _prev: ArchiveState,
+  _formData: FormData,
+): Promise<ArchiveState> {
+  void _formData;
+  if (!isUuid(lineupId)) return { error: FAILED.error };
+  const supabase = await memberClient();
+
+  const { data, error } = await supabase
+    .from("lineups")
+    .update({ archived_at: new Date().toISOString() })
+    .eq("id", lineupId)
+    .select("id")
+    .maybeSingle();
+  if (error || !data) return { error: "Couldn't archive the lineup. Please try again." };
+
+  redirect("/lineups");
+}
+
 /** Saves a new order. `itemIds` lists every item in its new order. */
 export async function reorderLineupItems(lineupId: string, itemIds: string[]): Promise<ActionResult> {
   if (!isUuid(lineupId) || !Array.isArray(itemIds) || itemIds.length > 200 || !itemIds.every(isUuid)) {

@@ -115,6 +115,16 @@ export function semitonesBetween(from: ParsedKey, to: ParsedKey): number {
 }
 
 /**
+ * How far up to move a song saved in `fromKey` to show it in `toKey` (0 to 11).
+ * Returns 0 if either key is missing or unreadable.
+ */
+export function semitonesToKey(fromKey: string | null, toKey: string | null): number {
+  const from = fromKey ? parseKey(fromKey) : null;
+  const to = toKey ? parseKey(toKey) : null;
+  return from && to ? semitonesBetween(from, to) : 0;
+}
+
+/**
  * Best guess at a song's key from its first chord (songs usually start on the
  * key chord). Used only when the song has no original key saved.
  */

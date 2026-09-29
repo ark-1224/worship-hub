@@ -6,6 +6,7 @@ import {
   parseKey,
   preferredAccidental,
   semitonesBetween,
+  semitonesToKey,
   transposeChord,
   type Accidental,
 } from "./transpose";
@@ -193,6 +194,17 @@ describe("keys", () => {
     expect(semitonesBetween(g, parseKey("F")!)).toBe(10);
     expect(semitonesBetween(g, g)).toBe(0);
     expect(semitonesBetween(parseKey("B")!, parseKey("C")!)).toBe(1);
+  });
+
+  it("works out the shift needed to show a song in a lineup's key", () => {
+    expect(semitonesToKey("G", "A")).toBe(2);
+    expect(semitonesToKey("G", "F")).toBe(10);
+    expect(semitonesToKey("G", "G")).toBe(0);
+    expect(semitonesToKey("Am", "Bm")).toBe(2);
+    expect(semitonesToKey("D", "Bb")).toBe(8);
+    expect(semitonesToKey(null, "A")).toBe(0);
+    expect(semitonesToKey("G", null)).toBe(0);
+    expect(semitonesToKey("G", "nope")).toBe(0);
   });
 
   it("guesses the key from the first chord", () => {

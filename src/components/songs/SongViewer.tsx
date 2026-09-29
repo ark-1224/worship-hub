@@ -7,6 +7,7 @@ import {
   keyName,
   parseKey,
   preferredAccidental,
+  semitonesToKey,
   transposeChord,
   type Accidental,
   type AccidentalSetting,
@@ -26,17 +27,22 @@ const SETTINGS: { value: AccidentalSetting; label: string; hint: string }[] = [
 export function SongViewer({
   chordText,
   originalKey,
+  initialKey = null,
 }: {
   chordText: string;
   originalKey: string | null;
+  /** Open in this key (e.g. the key chosen in a lineup). Still view-only. */
+  initialKey?: string | null;
 }) {
-  const [semitones, setSemitones] = useState(0); // 0..11 above the original key
+  // No saved key? Guess from the first chord so the controls still work.
+  const guessed = originalKey ? null : guessKey(chordText);
+  const startSemitones = semitonesToKey(originalKey ?? guessed, initialKey);
+
+  const [semitones, setSemitones] = useState(startSemitones); // 0..11 above the original key
   const [setting, setSetting] = useAccidentalSetting();
 
   const lines = useMemo(() => parseChordPro(chordText), [chordText]);
 
-  // No saved key? Guess from the first chord so the controls still work.
-  const guessed = originalKey ? null : guessKey(chordText);
   const baseKey = parseKey(originalKey ?? guessed ?? "");
 
   const currentPitch = baseKey ? (baseKey.pitch + semitones) % 12 : 0;
@@ -137,9 +143,11 @@ export function SongViewer({
         </div>
 
         <p className="text-sm text-stone-600" aria-live="polite">
-          {semitones === 0
-            ? "Showing the original chords."
-            : `Transposed ${shownShift > 0 ? "+" : "−"}${Math.abs(shownShift)} for this view only. The saved song isn't changed.`}
+          {initialKey && startSemitones !== 0 && semitones === startSemitones
+            ? `Showing the key chosen for this service (${initialKey}). The saved song isn't changed.`
+            : semitones === 0
+              ? "Showing the original chords."
+              : `Transposed ${shownShift > 0 ? "+" : "−"}${Math.abs(shownShift)} for this view only. The saved song isn't changed.`}
         </p>
       </section>
 

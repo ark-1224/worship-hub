@@ -29,6 +29,14 @@ export function LineupItemRow({
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
   const [note, setNote] = useState(item.note);
+  const [editingNote, setEditingNote] = useState(false);
+
+  // Someone else changed this note? Show it, unless I'm typing in it right now.
+  const [seenNote, setSeenNote] = useState(item.note);
+  if (item.note !== seenNote) {
+    setSeenNote(item.note);
+    if (!editingNote) setNote(item.note);
+  }
 
   const keys = keyChoices(item.originalKey);
   // Keep a saved key selectable even if it isn't in the usual list.
@@ -133,8 +141,12 @@ export function LineupItemRow({
             maxLength={500}
             placeholder="e.g. Slow, end on the chorus"
             onChange={(e) => setNote(e.target.value)}
+            onFocus={() => setEditingNote(true)}
             // Saved when you leave the field, not on every keystroke.
-            onBlur={() => note.trim() !== item.note && onChange(item.id, { note })}
+            onBlur={() => {
+              setEditingNote(false);
+              if (note.trim() !== item.note) onChange(item.id, { note });
+            }}
             onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
             className="input min-h-10 py-1"
           />
