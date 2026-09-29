@@ -61,7 +61,9 @@ or path, which gives `syntax error at or near "supabase"`), and click **Run**. D
 3. `supabase/migrations/0003_save_song.sql` – the "save song + write history" function
 4. `supabase/migrations/0004_lineups.sql` – lineups (Phase 2): service type, adding/reordering songs, realtime
 
-(If you already ran 0001–0003, just run the new 0004.)
+5. `supabase/migrations/0005_song_history.sql` – song history (Phase 3): full snapshots on every save, and restore
+
+(If you already ran the earlier ones, just run the new file(s).)
 
 Each should finish with "Success. No rows returned". Run them only once; if you need to start over, use
 Database → reset the project or drop the tables first.

@@ -2,9 +2,10 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { parseSongForm, type SongFieldErrors } from "@/lib/songs";
+import { isUuid, parseSongForm, type SongFieldErrors } from "@/lib/songs";
 
 export type SaveSongState = { error?: string; fieldErrors?: SongFieldErrors } | undefined;
+export type SimpleState = { error?: string } | undefined;
 
 // Saves a new or edited song. Everything is checked again here on the server
 // (never trust the browser), then handed to the save_song() database function,
@@ -40,4 +41,50 @@ export async function saveSong(_prev: SaveSongState, formData: FormData): Promis
   }
 
   redirect(`/songs/${songId}`);
+}
+
+// Puts an older version of a song back (the title, chords and, for versions
+// saved since Phase 3, the key, BPM, tags, links and notes). The database
+// function also records the restore as a new history entry, so it can be undone.
+export async function restoreSongVersion(
+  versionId: string,
+  _prev: SimpleState,
+  _formData: FormData,
+): Promise<SimpleState> {
+  void _formData;
+  if (!isUuid(versionId)) return { error: "Something went wrong. Please try again." };
+
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  if (!claims?.claims) redirect("/login");
+
+  const { data: songId, error } = await supabase.rpc("restore_song_version", { p_version_id: versionId });
+  if (error || !songId) return { error: "Couldn't restore that version. Please try again." };
+
+  redirect(`/songs/${songId}`);
+}
+
+// Moves a song to the archive (a "soft delete": nothing is erased). Any member
+// can archive it; only an admin can restore it (enforced in the database).
+export async function archiveSong(
+  songId: string,
+  _prev: SimpleState,
+  _formData: FormData,
+): Promise<SimpleState> {
+  void _formData;
+  if (!isUuid(songId)) return { error: "Something went wrong. Please try again." };
+
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  if (!claims?.claims) redirect("/login");
+
+  const { data, error } = await supabase
+    .from("songs")
+    .update({ archived_at: new Date().toISOString() })
+    .eq("id", songId)
+    .select("id")
+    .maybeSingle();
+  if (error || !data) return { error: "Couldn't archive the song. Please try again." };
+
+  redirect("/songs");
 }

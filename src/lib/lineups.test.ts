@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   formatServiceDate,
   formatServiceTime,
+  formatTimestamp,
   isValidDate,
   keyChoices,
   moveItem,
@@ -87,6 +88,14 @@ describe("splitUpcomingPast", () => {
 
   it("handles an empty list", () => {
     expect(splitUpcomingPast([], "2026-10-04")).toEqual({ upcoming: [], past: [] });
+  });
+});
+
+describe("formatTimestamp", () => {
+  it("shows the time in the given time zone", () => {
+    expect(formatTimestamp("2026-10-02T07:41:00Z", "Asia/Manila")).toBe("Oct 2, 2026, 3:41 PM");
+    expect(formatTimestamp("2026-10-02T07:41:00Z", "UTC")).toBe("Oct 2, 2026, 7:41 AM");
+    expect(formatTimestamp("nope", "UTC")).toBe("");
   });
 });
 

@@ -76,6 +76,20 @@ export function splitUpcomingPast<T extends Dated>(
   return { upcoming, past };
 }
 
+/** A moment in time in the team's time zone: "Oct 2, 2026, 3:41 PM". */
+export function formatTimestamp(iso: string, timeZone: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
+
 /**
  * "Last edited ..." wording: "just now", "2 min ago", "3 hr ago", "yesterday",
  * "4 days ago", then a plain date. `now` is passed in so it can be tested.
