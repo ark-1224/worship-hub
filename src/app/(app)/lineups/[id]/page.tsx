@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { duplicateLineup } from "@/app/(app)/lineups/[id]/actions";
+import { ConfirmActionButton } from "@/components/ConfirmActionButton";
 import { ArchiveLineupButton } from "@/components/lineups/ArchiveLineupButton";
 import { LastEdited } from "@/components/lineups/LastEdited";
 import { LineupEditor } from "@/components/lineups/LineupEditor";
@@ -104,11 +106,22 @@ export default async function LineupPage({ params }: { params: Promise<{ id: str
         )}
       </header>
 
-      {items.length > 0 && (
-        <Link href={`/lineups/${lineup.id}/stage`} className="btn-primary w-full sm:w-auto">
-          ▶ Stage mode
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+        {items.length > 0 && (
+          <Link href={`/lineups/${lineup.id}/stage`} className="btn-primary w-full sm:w-auto">
+            ▶ Stage mode
+          </Link>
+        )}
+        <Link href={`/lineups/${lineup.id}/print`} className="btn-secondary w-full sm:w-auto">
+          🖨 Print / PDF
         </Link>
-      )}
+        <ConfirmActionButton
+          variant="secondary"
+          action={duplicateLineup.bind(null, lineup.id)}
+          label="⧉ Duplicate lineup"
+          pendingLabel="Duplicating…"
+        />
+      </div>
 
       <LineupEditor lineupId={lineup.id} initialItems={items} songs={songs} members={members} />
 

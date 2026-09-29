@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  addDays,
+  copyTitle,
   formatServiceDate,
   formatServiceTime,
   formatTimestamp,
@@ -29,6 +31,52 @@ describe("todayIn (team time zone, not the server's)", () => {
 
   it("is still the previous day in New York at the same moment", () => {
     expect(todayIn("America/New_York", new Date("2026-10-01T03:00:00Z"))).toBe("2026-09-30");
+  });
+});
+
+describe("addDays", () => {
+  it("adds a week, rolling over months and years", () => {
+    expect(addDays("2026-10-04", 7)).toBe("2026-10-11");
+    expect(addDays("2026-10-28", 7)).toBe("2026-11-04");
+    expect(addDays("2026-12-27", 7)).toBe("2027-01-03");
+  });
+  it("handles leap days", () => {
+    expect(addDays("2028-02-25", 7)).toBe("2028-03-03"); // 2028 is a leap year
+    expect(addDays("2026-02-25", 7)).toBe("2026-03-04");
+    expect(addDays("2028-02-22", 7)).toBe("2028-02-29");
+  });
+  it("can go backwards, and keeps the same weekday after 7 days", () => {
+    expect(addDays("2026-10-04", -4)).toBe("2026-09-30");
+    const weekday = (d: string) => new Date(d + "T00:00:00Z").getUTCDay();
+    expect(weekday(addDays("2026-10-04", 7))).toBe(weekday("2026-10-04"));
+  });
+  it("returns an invalid date unchanged instead of guessing", () => {
+    expect(addDays("nope", 7)).toBe("nope");
+    expect(addDays("2026-02-30", 7)).toBe("2026-02-30");
+  });
+});
+
+describe("copyTitle", () => {
+  it("adds (copy), then counts up", () => {
+    expect(copyTitle("Sunday Service")).toBe("Sunday Service (copy)");
+    expect(copyTitle("Sunday Service (copy)")).toBe("Sunday Service (copy 2)");
+    expect(copyTitle("Sunday Service (copy 2)")).toBe("Sunday Service (copy 3)");
+    expect(copyTitle("Sunday Service (copy 9)")).toBe("Sunday Service (copy 10)");
+  });
+  it("tidies spaces", () => {
+    expect(copyTitle("  Youth Night  ")).toBe("Youth Night (copy)");
+  });
+  it("only counts a real '(copy)' at the end", () => {
+    expect(copyTitle("Copy of the year (special)")).toBe("Copy of the year (special) (copy)");
+    expect(copyTitle("(copy) Sunday")).toBe("(copy) Sunday (copy)");
+  });
+  it("never goes over the 200-character title limit", () => {
+    const long = "x".repeat(200);
+    const once = copyTitle(long);
+    expect(once).toHaveLength(200);
+    expect(once.endsWith(" (copy)")).toBe(true);
+    expect(copyTitle(once).length).toBeLessThanOrEqual(200);
+    expect(copyTitle(once).endsWith(" (copy 2)")).toBe(true);
   });
 });
 

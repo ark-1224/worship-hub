@@ -64,6 +64,7 @@ or path, which gives `syntax error at or near "supabase"`), and click **Run**. D
 5. `supabase/migrations/0005_song_history.sql` – song history (Phase 3): full snapshots on every save, and restore
 6. `supabase/migrations/0006_search.sql` – library search across lyrics, and "recently used" sorting
 7. `supabase/migrations/0007_team_admin.sql` – team tools: last-admin guard and removing members
+8. `supabase/migrations/0008_duplicate_lineup.sql` – "Duplicate lineup" (Phase 4)
 
 (If you already ran the earlier ones, just run the new file(s).)
 

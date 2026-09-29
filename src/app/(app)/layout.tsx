@@ -25,7 +25,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-dvh">
-      <header className="sticky top-0 z-10 border-b border-stone-200 bg-white/95 backdrop-blur">
+      {/* print:hidden: the menu is not part of a printed page. */}
+      <header className="sticky top-0 z-10 border-b border-stone-200 bg-white/95 backdrop-blur print:hidden">
         {/* Phones: brand + Log out on the first row, links on a second row (scrolls sideways if needed). */}
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-3 px-4 py-1 text-sm font-medium">
           <Link href="/" className="py-2 text-lg font-bold text-accent-700">
@@ -52,7 +53,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </form>
         </div>
       </header>
-      <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
+      <main className="mx-auto max-w-5xl px-4 py-6 print:max-w-none print:p-0">{children}</main>
     </div>
   );
 }

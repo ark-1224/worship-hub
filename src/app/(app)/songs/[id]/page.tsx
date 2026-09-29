@@ -116,6 +116,7 @@ export default async function SongPage({
       {/* key= restarts the viewer if you open the same song in a different key */}
       <SongViewer
         key={lineupKey ?? "original"}
+        songId={song.id}
         chordText={song.chord_text ?? ""}
         originalKey={song.original_key}
         initialKey={lineupKey}

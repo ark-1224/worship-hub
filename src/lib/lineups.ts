@@ -36,6 +36,32 @@ export function isValidDate(value: string): boolean {
   return d.getUTCFullYear() === year && d.getUTCMonth() === month - 1 && d.getUTCDate() === day;
 }
 
+/**
+ * A date `days` later (or earlier), as "YYYY-MM-DD". Used to date a duplicated
+ * lineup a week ahead. Works on the calendar date only, so months, years and
+ * leap days roll over correctly and no time zone can shift the result.
+ */
+export function addDays(date: string, days: number): string {
+  const m = DATE_PATTERN.exec(date);
+  if (!m || !isValidDate(date)) return date;
+  const shifted = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]) + days));
+  return shifted.toISOString().slice(0, 10);
+}
+
+const MAX_TITLE = 200; // the database's limit for a lineup title
+
+/**
+ * The title for a copy: "Sunday Service" -> "Sunday Service (copy)", and
+ * copying that gives "(copy 2)", "(copy 3)" and so on. Always fits the limit.
+ */
+export function copyTitle(title: string): string {
+  const existing = /^(.*?)\s*\(copy(?: (\d+))?\)$/.exec(title.trim());
+  const base = existing ? existing[1] : title.trim();
+  const number = existing ? Number(existing[2] ?? 1) + 1 : 1;
+  const suffix = number === 1 ? " (copy)" : ` (copy ${number})`;
+  return base.slice(0, MAX_TITLE - suffix.length).trimEnd() + suffix;
+}
+
 /** "2026-10-04" -> "Sun, Oct 4, 2026". A date has no time zone, so it's formatted as UTC. */
 export function formatServiceDate(date: string | null): string {
   if (!date || !isValidDate(date)) return "No date";

@@ -23,10 +23,12 @@ export function ChordSheet({
   transposeChord?: (chord: string) => string;
   fontSizePx?: number;
   showChords?: boolean;
-  variant?: "light" | "dark";
+  variant?: "light" | "dark" | "print";
   className?: string;
 }) {
   const dark = variant === "dark";
+  // Chords and section headings: amber on black for stage, plain black on paper, brand colour otherwise.
+  const accent = dark ? "text-amber-300" : variant === "print" ? "text-black" : "text-accent-700";
 
   if (lines.every((l) => l.kind === "blank")) {
     return <p className={dark ? "text-stone-400" : "text-stone-500"}>Nothing to show yet.</p>;
@@ -44,9 +46,7 @@ export function ChordSheet({
           return (
             <div
               key={i}
-              className={`mt-3 mb-1 font-sans text-[0.8em] font-bold uppercase tracking-wide ${
-                dark ? "text-amber-300" : "text-accent-700"
-              }`}
+              className={`mt-3 mb-1 font-sans text-[0.8em] font-bold uppercase tracking-wide ${accent}`}
             >
               {line.text}
             </div>
@@ -61,7 +61,8 @@ export function ChordSheet({
         const tokens = tokenizeLine(line.segments);
 
         return (
-          <div key={i} className={hasChords ? "pt-[0.25em]" : ""}>
+          // print:break-inside-avoid keeps a chord line and its lyric together across pages.
+          <div key={i} className={`print:break-inside-avoid ${hasChords ? "pt-[0.25em]" : ""}`}>
             {tokens.map((token, j) =>
               token.type === "space" ? (
                 <span key={j} className="whitespace-pre-wrap">
@@ -72,11 +73,7 @@ export function ChordSheet({
                   {token.parts.map((part, k) => (
                     <span key={k} className="inline-flex flex-col">
                       {hasChords && (
-                        <span
-                          className={`min-h-[1.25em] pr-[0.25em] font-bold ${
-                            dark ? "text-amber-300" : "text-accent-700"
-                          }`}
-                        >
+                        <span className={`min-h-[1.25em] pr-[0.25em] font-bold ${accent}`}>
                           {part.chord === null
                             ? " "
                             : transposeChord

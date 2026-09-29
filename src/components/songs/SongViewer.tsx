@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { parseChordPro } from "@/lib/chords/chordpro";
 import {
@@ -34,10 +35,12 @@ const SETTINGS: { value: AccidentalSetting; label: string; hint: string }[] = [
 // component's state, so it resets on reload and never changes the saved song
 // or its original key.
 export function SongViewer({
+  songId,
   chordText,
   originalKey,
   initialKey = null,
 }: {
+  songId: string;
   chordText: string;
   originalKey: string | null;
   /** Open in this key (e.g. the key chosen in a lineup). Still view-only. */
@@ -160,6 +163,16 @@ export function SongViewer({
               : `Transposed ${shownShift > 0 ? "+" : "−"}${Math.abs(shownShift)} for this view only. The saved song isn't changed.`}
         </p>
       </section>
+
+      <div className="flex justify-end">
+        {/* Prints in the key you're looking at right now. */}
+        <Link
+          href={`/songs/${songId}/print${currentKeyName ? `?key=${encodeURIComponent(currentKeyName)}` : ""}`}
+          className="btn-secondary min-h-10 px-3 py-1 text-sm"
+        >
+          🖨 Print{currentKeyName && semitones !== 0 ? ` in ${currentKeyName}` : ""}
+        </Link>
+      </div>
 
       <div className="card overflow-x-auto">
         <ChordSheet

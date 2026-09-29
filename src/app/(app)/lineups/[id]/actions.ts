@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { parseItemPatch, type ItemPatch } from "@/lib/lineups";
+import { addDays, copyTitle, parseItemPatch, type ItemPatch } from "@/lib/lineups";
 import { isUuid } from "@/lib/songs";
 import { createClient } from "@/lib/supabase/server";
 
@@ -54,6 +54,38 @@ export async function updateLineupItem(itemId: string, patch: ItemPatch): Promis
   const { error } = await supabase.from("lineup_items").update(parsed.columns).eq("id", itemId);
   if (error) return { ok: false, error: "Couldn't save that change. Please try again." };
   return { ok: true };
+}
+
+export type DuplicateState = { error?: string } | undefined;
+
+/**
+ * Copies a lineup and its songs (keys, leaders and notes included) into a new
+ * lineup dated a week later, then opens it so the details can be adjusted.
+ */
+export async function duplicateLineup(
+  lineupId: string,
+  _prev: DuplicateState,
+  _formData: FormData,
+): Promise<DuplicateState> {
+  void _formData;
+  if (!isUuid(lineupId)) return { error: FAILED.error };
+  const supabase = await memberClient();
+
+  const { data: original } = await supabase
+    .from("lineups")
+    .select("title, service_date")
+    .eq("id", lineupId)
+    .maybeSingle();
+  if (!original) return { error: "Couldn't find that lineup." };
+
+  const { data: newId, error } = await supabase.rpc("duplicate_lineup", {
+    p_lineup_id: lineupId,
+    p_title: copyTitle(original.title),
+    p_service_date: original.service_date ? addDays(original.service_date, 7) : null,
+  });
+  if (error || !newId) return { error: "Couldn't duplicate the lineup. Please try again." };
+
+  redirect(`/lineups/${newId}`);
 }
 
 export type ArchiveState = { error?: string } | undefined;

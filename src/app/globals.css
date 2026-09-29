@@ -12,6 +12,19 @@
     monospace;
 }
 
+/* Paper: a little margin, white background, and browsers keep the colours we ask for. */
+@media print {
+  @page {
+    margin: 14mm;
+  }
+  body {
+    background: #fff !important;
+    color: #000;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
