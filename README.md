@@ -85,7 +85,7 @@ Fill in `.env.local` from Supabase → **Project Settings → API**:
 
 | Variable | Where to find it |
 |---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Project URL |
+| `NEXT_PUBLIC_SUPABASE_URL` | Project URL: just `https://xxxx.supabase.co`, with no `/rest/v1/` on the end |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | "Publishable key" (or the legacy `anon` key) |
 | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` locally, your Vercel URL in production |
 

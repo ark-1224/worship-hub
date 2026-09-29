@@ -1,14 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChordSheet } from "@/components/songs/ChordSheet";
-import { parseChordPro } from "@/lib/chords/chordpro";
+import { SongViewer } from "@/components/songs/SongViewer";
+import { YouTubePlayer } from "@/components/songs/YouTubePlayer";
 import { isUuid } from "@/lib/songs";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Song" };
 
-// Basic song view. Transpose controls and the YouTube player arrive in step (c).
 export default async function SongPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
@@ -62,9 +61,20 @@ export default async function SongPage({ params }: { params: Promise<{ id: strin
         </p>
       )}
 
-      <div className="card overflow-x-auto">
-        <ChordSheet lines={parseChordPro(song.chord_text ?? "")} />
-      </div>
+      {song.youtube_video_id && <YouTubePlayer videoId={song.youtube_video_id} />}
+
+      {song.spotify_url && (
+        <a
+          href={song.spotify_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-secondary w-full sm:w-auto"
+        >
+          Open in Spotify
+        </a>
+      )}
+
+      <SongViewer chordText={song.chord_text ?? ""} originalKey={song.original_key} />
     </article>
   );
 }

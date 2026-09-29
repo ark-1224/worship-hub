@@ -11,5 +11,11 @@ export function getSupabaseEnv() {
         "NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (see README).",
     );
   }
-  return { url, key };
+  // The dashboard also shows the "Data API" address (.../rest/v1/). Only the
+  // base project URL is wanted, so drop any path someone pasted by mistake.
+  try {
+    return { url: new URL(url).origin, key };
+  } catch {
+    throw new Error("NEXT_PUBLIC_SUPABASE_URL isn't a valid URL. It should look like https://xxxx.supabase.co");
+  }
 }
