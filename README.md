@@ -27,24 +27,34 @@ The full roadmap is in [PLAN.md](PLAN.md). This repo currently contains **Phase 
 - **Site URL:** `http://localhost:3000` for now (change to your Vercel URL after deploying).
 - **Redirect URLs:** add `http://localhost:3000/**` and later `https://YOUR-SITE.vercel.app/**`.
 
-### Password-reset email template (recommended)
+### Password-reset emails
 
-Authentication → Emails → **Reset Password**. Change the link to:
+**You don't need to change anything.** Supabase's default reset email works with this app as is,
+as long as the Site URL and Redirect URLs above are set. Supabase only lets you *edit* email templates
+after you set up custom SMTP, so skip the template unless you do that.
+
+Two limits of the default setup:
+
+- **Same browser only.** The reset link must be opened in the same browser where "Forgot password" was
+  requested. If a member taps it inside a different app or browser (for example, the Gmail app's built-in
+  browser), they'll see "That link is invalid or has expired" and should request a new one and open the link
+  in the same browser.
+- **A few emails per hour.** Supabase's built-in sender is rate-limited on the free plan.
+
+**Optional upgrade (removes both limits):** set up custom SMTP (Project Settings → Authentication → SMTP,
+e.g. with Resend). Then edit Authentication → Emails → **Reset Password** and change the link to:
 
 ```html
 <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/reset-password">Reset password</a>
 ```
 
-This makes the reset link work even if a member opens the email on a different
-device than the one they requested it from. (The default link also works, but only
-on the same device/browser.)
-
-> Free-plan emails are limited to a few per hour. If members can't get reset emails, set up
-> custom SMTP (Project Settings → Authentication → SMTP), e.g. with Resend.
+That link works from any device or browser. The app already handles both link styles.
 
 ## 2. Run the SQL migrations
 
-In the Supabase dashboard open **SQL Editor → New query**, then paste and **Run** each file **in this order**:
+In the Supabase dashboard open **SQL Editor → New query**. For each file below: open it in your editor,
+select **everything inside the file** (Ctrl+A, Ctrl+C), paste that into the SQL Editor (not the file name
+or path, which gives `syntax error at or near "supabase"`), and click **Run**. Do them **in this order**:
 
 1. `supabase/migrations/0001_schema.sql` – tables
 2. `supabase/migrations/0002_auth_and_rls.sql` – permissions (Row Level Security), invite-code gate
