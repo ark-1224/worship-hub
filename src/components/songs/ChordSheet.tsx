@@ -5,40 +5,63 @@ import { tokenizeLine, type SongLine } from "@/lib/chords/chordpro";
 // between words are ordinary text, so on a narrow phone the line wraps
 // between words and never splits a chord from its syllable.
 //
-// `transposeChord` is optional; the song page passes one to show another key.
+// Optional settings (the song page and stage mode use them):
+//   transposeChord  show another key
+//   fontSizePx      text size; everything else scales from it
+//   showChords      false = lyrics only, for singers
+//   variant         "dark" for stage mode (light text on black)
 
 export function ChordSheet({
   lines,
   transposeChord,
+  fontSizePx,
+  showChords = true,
+  variant = "light",
   className = "",
 }: {
   lines: SongLine[];
   transposeChord?: (chord: string) => string;
+  fontSizePx?: number;
+  showChords?: boolean;
+  variant?: "light" | "dark";
   className?: string;
 }) {
+  const dark = variant === "dark";
+
   if (lines.every((l) => l.kind === "blank")) {
-    return <p className="text-stone-500">Nothing to show yet.</p>;
+    return <p className={dark ? "text-stone-400" : "text-stone-500"}>Nothing to show yet.</p>;
   }
 
   return (
-    <div className={`font-mono text-[15px] leading-tight sm:text-base ${className}`}>
+    <div
+      className={`font-mono leading-tight ${fontSizePx ? "" : "text-[15px] sm:text-base"} ${className}`}
+      style={fontSizePx ? { fontSize: fontSizePx } : undefined}
+    >
       {lines.map((line, i) => {
-        if (line.kind === "blank") return <div key={i} className="h-4" aria-hidden />;
+        if (line.kind === "blank") return <div key={i} className="h-[1em]" aria-hidden />;
 
         if (line.kind === "comment") {
           return (
-            <div key={i} className="mt-3 mb-1 font-sans text-sm font-bold uppercase tracking-wide text-accent-700">
+            <div
+              key={i}
+              className={`mt-3 mb-1 font-sans text-[0.8em] font-bold uppercase tracking-wide ${
+                dark ? "text-amber-300" : "text-accent-700"
+              }`}
+            >
               {line.text}
             </div>
           );
         }
 
+        // Lyrics only: a line that is just chords (an intro like "[Am] [G]") has nothing to sing.
+        if (!showChords && line.segments.every((s) => s.text.trim() === "")) return null;
+
         // Lines with no chords at all don't need the empty chord row above them.
-        const hasChords = line.segments.some((s) => s.chord !== null);
+        const hasChords = showChords && line.segments.some((s) => s.chord !== null);
         const tokens = tokenizeLine(line.segments);
 
         return (
-          <div key={i} className={hasChords ? "pt-1" : ""}>
+          <div key={i} className={hasChords ? "pt-[0.25em]" : ""}>
             {tokens.map((token, j) =>
               token.type === "space" ? (
                 <span key={j} className="whitespace-pre-wrap">
@@ -49,7 +72,11 @@ export function ChordSheet({
                   {token.parts.map((part, k) => (
                     <span key={k} className="inline-flex flex-col">
                       {hasChords && (
-                        <span className="min-h-[1.25em] pr-1 font-bold text-accent-700">
+                        <span
+                          className={`min-h-[1.25em] pr-[0.25em] font-bold ${
+                            dark ? "text-amber-300" : "text-accent-700"
+                          }`}
+                        >
                           {part.chord === null
                             ? " "
                             : transposeChord

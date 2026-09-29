@@ -3,17 +3,26 @@
 import { useMemo, useState } from "react";
 import { parseChordPro } from "@/lib/chords/chordpro";
 import {
+  chordTransposer,
   guessKey,
   keyName,
   parseKey,
-  preferredAccidental,
   semitonesToKey,
-  transposeChord,
-  type Accidental,
   type AccidentalSetting,
 } from "@/lib/chords/transpose";
+import {
+  DEFAULT_SCROLL_LEVEL,
+  DEFAULT_SONG_FONT_STEP,
+  MAX_FONT_STEP,
+  MAX_SCROLL_LEVEL,
+  fontSizePx,
+  scrollSpeed,
+} from "@/lib/display";
 import { useAccidentalSetting } from "@/lib/useAccidentalSetting";
+import { useAutoScroll } from "@/lib/useAutoScroll";
+import { useLocalNumber, useLocalSetting } from "@/lib/useLocalSetting";
 import { ChordSheet } from "./ChordSheet";
+import { DisplayControls } from "./DisplayControls";
 
 const SETTINGS: { value: AccidentalSetting; label: string; hint: string }[] = [
   { value: "auto", label: "Auto", hint: "Sharps or flats to suit the key" },
@@ -41,6 +50,12 @@ export function SongViewer({
   const [semitones, setSemitones] = useState(startSemitones); // 0..11 above the original key
   const [setting, setSetting] = useAccidentalSetting();
 
+  // Display choices, remembered on this device: text size, chords on/off, scroll speed.
+  const [fontStep, setFontStep] = useLocalNumber("worship-hub:font-step", DEFAULT_SONG_FONT_STEP, 0, MAX_FONT_STEP);
+  const [chordsSetting, setChordsSetting] = useLocalSetting("worship-hub:chords", "on", ["on", "off"] as const);
+  const [scrollLevel, setScrollLevel] = useLocalNumber("worship-hub:scroll-level", DEFAULT_SCROLL_LEVEL, 1, MAX_SCROLL_LEVEL);
+  const autoScroll = useAutoScroll(scrollSpeed(scrollLevel));
+
   const lines = useMemo(() => parseChordPro(chordText), [chordText]);
 
   const baseKey = parseKey(originalKey ?? guessed ?? "");
@@ -48,13 +63,8 @@ export function SongViewer({
   const currentPitch = baseKey ? (baseKey.pitch + semitones) % 12 : 0;
   const currentKeyName = baseKey ? keyName(currentPitch, baseKey.minor, setting) : null;
 
-  // Which accidental to write chords with: forced by the setting, or (auto) by the key.
-  const accidental: Accidental =
-    setting === "sharps" ? "#" : setting === "flats" ? "b" : preferredAccidental(currentKeyName ?? "C");
-
-  // At the original key with "Auto", show chords exactly as saved (no respelling).
-  const transpose = (chord: string) =>
-    semitones === 0 && setting === "auto" ? chord : transposeChord(chord, semitones, accidental);
+  // Shifts each chord and picks sharps or flats (see chordTransposer).
+  const transpose = chordTransposer(setting, semitones, currentKeyName);
 
   const step = (delta: number) => setSemitones((s) => (s + delta + 12) % 12);
   const chooseKey = (pitch: number) => baseKey && setSemitones((pitch - baseKey.pitch + 12) % 12);
@@ -152,7 +162,27 @@ export function SongViewer({
       </section>
 
       <div className="card overflow-x-auto">
-        <ChordSheet lines={lines} transposeChord={transpose} />
+        <ChordSheet
+          lines={lines}
+          transposeChord={transpose}
+          fontSizePx={fontSizePx(fontStep)}
+          showChords={chordsSetting === "on"}
+        />
+      </div>
+
+      {/* Sticks to the bottom of the screen while you read, so text size, chords
+          and auto-scroll are always within reach. */}
+      <div className="sticky bottom-3 z-10 rounded-xl border border-stone-200 bg-white/95 p-2 shadow-lg backdrop-blur">
+        <DisplayControls
+          fontStep={fontStep}
+          onFontStep={setFontStep}
+          showChords={chordsSetting === "on"}
+          onShowChords={(show) => setChordsSetting(show ? "on" : "off")}
+          scrolling={autoScroll.running}
+          onToggleScroll={autoScroll.toggle}
+          scrollLevel={scrollLevel}
+          onScrollLevel={setScrollLevel}
+        />
       </div>
     </div>
   );

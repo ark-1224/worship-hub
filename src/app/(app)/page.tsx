@@ -85,9 +85,16 @@ export default async function HomePage() {
                 ))}
               </ol>
             )}
-            <Link href={`/lineups/${lineup.id}`} className="btn-secondary w-full sm:w-auto">
-              Open lineup
-            </Link>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Link href={`/lineups/${lineup.id}`} className="btn-secondary w-full sm:w-auto">
+                Open lineup
+              </Link>
+              {lineup.lineup_items.length > 0 && (
+                <Link href={`/lineups/${lineup.id}/stage`} className="btn-primary w-full sm:w-auto">
+                  ▶ Stage mode
+                </Link>
+              )}
+            </div>
           </>
         ) : (
           <>

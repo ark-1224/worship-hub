@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  chordTransposer,
   guessKey,
   keyName,
   noteName,
@@ -150,6 +151,29 @@ describe("transposeChord: every root, quality, distance and accidental", () => {
       for (let i = 0; i < 12; i++) chord = transposeChord(chord, 1, "#");
       expect(PITCH[chord.replace("maj7", "")]).toBe(PITCH[root]);
     }
+  });
+});
+
+describe("chordTransposer", () => {
+  it("shows chords exactly as saved at the original key with 'auto'", () => {
+    const show = chordTransposer("auto", 0, "G");
+    expect(show("A#")).toBe("A#"); // not respelled
+    expect(show("Bb/D")).toBe("Bb/D");
+  });
+
+  it("follows the key being shown when 'auto' (flats in F, sharps in D)", () => {
+    expect(chordTransposer("auto", 1, "Ab")("G")).toBe("Ab");
+    expect(chordTransposer("auto", 3, "D")("Bb")).toBe("C#"); // Bb is pitch 10; +3 = pitch 1, spelled with sharps in D
+    expect(chordTransposer("auto", 1, "F")("E")).toBe("F");
+  });
+
+  it("forces sharps or flats when asked, even at 0 semitones", () => {
+    expect(chordTransposer("sharps", 0, "G")("Bb")).toBe("A#");
+    expect(chordTransposer("flats", 0, "G")("F#m")).toBe("Gbm");
+  });
+
+  it("handles a missing key", () => {
+    expect(chordTransposer("auto", 2, null)("G")).toBe("A");
   });
 });
 

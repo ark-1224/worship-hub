@@ -64,6 +64,22 @@ export function transposeChord(chord: string, semitones: number, accidental: Acc
   );
 }
 
+/**
+ * Builds the function that turns a stored chord into the chord to display:
+ * shifted up by `semitones`, spelled with sharps or flats per the setting
+ * ("auto" follows the key being shown). At the original key with "auto",
+ * chords are shown exactly as saved.
+ */
+export function chordTransposer(
+  setting: AccidentalSetting,
+  semitones: number,
+  shownKey: string | null,
+): (chord: string) => string {
+  const accidental: Accidental =
+    setting === "sharps" ? "#" : setting === "flats" ? "b" : preferredAccidental(shownKey ?? "C");
+  return (chord) => (semitones === 0 && setting === "auto" ? chord : transposeChord(chord, semitones, accidental));
+}
+
 // ---------------------------------------------------------------------------
 // Keys
 // ---------------------------------------------------------------------------

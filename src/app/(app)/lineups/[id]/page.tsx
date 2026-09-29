@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArchiveLineupButton } from "@/components/lineups/ArchiveLineupButton";
 import { LastEdited } from "@/components/lineups/LastEdited";
@@ -94,6 +95,12 @@ export default async function LineupPage({ params }: { params: Promise<{ id: str
           </p>
         )}
       </header>
+
+      {items.length > 0 && (
+        <Link href={`/lineups/${lineup.id}/stage`} className="btn-primary w-full sm:w-auto">
+          ▶ Stage mode
+        </Link>
+      )}
 
       <LineupEditor lineupId={lineup.id} initialItems={items} songs={songs} members={members} />
 
