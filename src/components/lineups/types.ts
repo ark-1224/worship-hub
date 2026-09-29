@@ -7,6 +7,7 @@ export type EditorItem = {
   title: string;
   artist: string | null;
   originalKey: string | null;
+  youtubeVideoId: string | null; // for "Play all"
   keyOverride: string | null; // key for THIS service only; null = the song's own key
   leaderId: string | null;
   note: string;
@@ -18,6 +19,7 @@ export type PickerSong = {
   title: string;
   artist: string | null;
   originalKey: string | null;
+  youtubeVideoId: string | null;
 };
 
 export type Member = { id: string; name: string };

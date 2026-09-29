@@ -17,7 +17,13 @@ type ItemRow = {
   key_override: string | null;
   leader_id: string | null;
   note: string | null;
-  song: { id: string; title: string; artist: string | null; original_key: string | null } | null;
+  song: {
+    id: string;
+    title: string;
+    artist: string | null;
+    original_key: string | null;
+    youtube_video_id: string | null;
+  } | null;
 };
 
 export default async function LineupPage({ params }: { params: Promise<{ id: string }> }) {
@@ -33,14 +39,14 @@ export default async function LineupPage({ params }: { params: Promise<{ id: str
     supabase
       .from("lineups")
       .select(
-        "*, editor:profiles!updated_by(name), lineup_items(id, position, key_override, leader_id, note, song:songs(id, title, artist, original_key))",
+        "*, editor:profiles!updated_by(name), lineup_items(id, position, key_override, leader_id, note, song:songs(id, title, artist, original_key, youtube_video_id))",
       )
       .eq("id", id)
       .order("position", { referencedTable: "lineup_items" })
       .maybeSingle(),
     supabase
       .from("songs")
-      .select("id, title, artist, original_key")
+      .select("id, title, artist, original_key, youtube_video_id")
       .is("archived_at", null)
       .order("title", { ascending: true }),
     supabase.from("profiles").select("id, name").order("name", { ascending: true }),
@@ -57,6 +63,7 @@ export default async function LineupPage({ params }: { params: Promise<{ id: str
       title: row.song!.title,
       artist: row.song!.artist,
       originalKey: row.song!.original_key,
+      youtubeVideoId: row.song!.youtube_video_id,
       keyOverride: row.key_override,
       leaderId: row.leader_id,
       note: row.note ?? "",
@@ -67,6 +74,7 @@ export default async function LineupPage({ params }: { params: Promise<{ id: str
     title: s.title,
     artist: s.artist,
     originalKey: s.original_key,
+    youtubeVideoId: s.youtube_video_id,
   }));
   const members: Member[] = membersResult.data ?? [];
 

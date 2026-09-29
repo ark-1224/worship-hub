@@ -22,6 +22,7 @@ import { moveItem, type ItemPatch } from "@/lib/lineups";
 import { createClient } from "@/lib/supabase/client";
 import { AddSongDialog } from "./AddSongDialog";
 import { LineupItemRow } from "./LineupItemRow";
+import { PlayAll } from "./PlayAll";
 import type { EditorItem, Member, PickerSong } from "./types";
 
 // The editable song list of a lineup.
@@ -179,6 +180,7 @@ export function LineupEditor({
               title: song.title,
               artist: song.artist,
               originalKey: song.originalKey,
+              youtubeVideoId: song.youtubeVideoId,
               keyOverride: null,
               leaderId: null,
               note: "",
@@ -209,6 +211,9 @@ export function LineupEditor({
           {error}
         </p>
       )}
+
+      {/* Plays the videos in the order shown below, including any reordering you do. */}
+      <PlayAll items={items.map((i) => ({ id: i.id, title: i.title, videoId: i.youtubeVideoId }))} />
 
       {items.length === 0 ? (
         <p className="card text-stone-600">No songs yet. Tap “Add song” to build the lineup.</p>
