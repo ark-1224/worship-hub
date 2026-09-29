@@ -6,6 +6,7 @@ import { ConfirmActionButton } from "@/components/ConfirmActionButton";
 import { SongViewer } from "@/components/songs/SongViewer";
 import { YouTubePlayer } from "@/components/songs/YouTubePlayer";
 import { KEY_PATTERN } from "@/lib/chords/keys";
+import { libraryHref } from "@/lib/library";
 import { isUuid } from "@/lib/songs";
 import { createClient } from "@/lib/supabase/server";
 
@@ -79,8 +80,14 @@ export default async function SongPage({
         {song.tags?.length > 0 && (
           <ul className="flex flex-wrap gap-1.5">
             {song.tags.map((tag: string) => (
-              <li key={tag} className="rounded-full bg-accent-100 px-2.5 py-0.5 text-xs font-medium text-accent-700">
-                {tag}
+              <li key={tag}>
+                {/* A tag opens the library filtered to that tag. */}
+                <Link
+                  href={libraryHref({ tag })}
+                  className="inline-block rounded-full bg-accent-100 px-2.5 py-0.5 text-xs font-medium text-accent-700 hover:bg-accent-200"
+                >
+                  {tag}
+                </Link>
               </li>
             ))}
           </ul>

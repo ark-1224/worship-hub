@@ -62,6 +62,7 @@ or path, which gives `syntax error at or near "supabase"`), and click **Run**. D
 4. `supabase/migrations/0004_lineups.sql` – lineups (Phase 2): service type, adding/reordering songs, realtime
 
 5. `supabase/migrations/0005_song_history.sql` – song history (Phase 3): full snapshots on every save, and restore
+6. `supabase/migrations/0006_search.sql` – library search across lyrics, and "recently used" sorting
 
 (If you already ran the earlier ones, just run the new file(s).)
 
