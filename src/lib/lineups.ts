@@ -1,5 +1,8 @@
 // Helpers for lineups: dates in the team's time zone, upcoming-vs-past
-// grouping, and checking the lineup form. Pure functions, easy to test.
+// grouping, reordering songs, and checking the lineup forms. Pure functions,
+// easy to test.
+
+import { KEY_PATTERN, MAJOR_KEYS, MINOR_KEYS, SONG_KEYS } from "./chords/keys";
 
 // Vercel's servers run in UTC. Without a fixed time zone, "today" would be
 // wrong for a few hours each day and a Sunday lineup could look like it's
@@ -71,6 +74,65 @@ export function splitUpcomingPast<T extends Dated>(
   const upcoming = lineups.filter((l) => !isPast(l)).sort((a, b) => sortKey(a).localeCompare(sortKey(b)));
   const past = lineups.filter(isPast).sort((a, b) => sortKey(b).localeCompare(sortKey(a)));
   return { upcoming, past };
+}
+
+// ---------------------------------------------------------------------------
+// Songs inside a lineup
+// ---------------------------------------------------------------------------
+
+/** A copy of the list with one item moved (used by drag-and-drop and the up/down buttons). */
+export function moveItem<T>(list: T[], from: number, to: number): T[] {
+  if (from === to || from < 0 || to < 0 || from >= list.length || to >= list.length) return list;
+  const copy = [...list];
+  const [moved] = copy.splice(from, 1);
+  copy.splice(to, 0, moved);
+  return copy;
+}
+
+/**
+ * Keys offered for "key for this service": the song's own major or minor keys,
+ * or all of them when the song has no saved key.
+ */
+export function keyChoices(originalKey: string | null): string[] {
+  if (originalKey && KEY_PATTERN.test(originalKey)) {
+    return originalKey.endsWith("m") ? [...MINOR_KEYS] : [...MAJOR_KEYS];
+  }
+  return [...SONG_KEYS];
+}
+
+const UUID_ANY = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** What can be changed on one song in a lineup. Missing fields are left as they are. */
+export type ItemPatch = { keyOverride?: string | null; leaderId?: string | null; note?: string };
+
+/**
+ * Checks an edit to a lineup song and returns the database columns to change.
+ * Runs on the server; never trust what the browser sends.
+ */
+export function parseItemPatch(
+  patch: ItemPatch,
+): { ok: true; columns: Record<string, string | null> } | { ok: false; error: string } {
+  const columns: Record<string, string | null> = {};
+
+  if ("keyOverride" in patch) {
+    const key = patch.keyOverride?.trim() || null; // "" means "use the song's own key"
+    if (key !== null && !KEY_PATTERN.test(key)) return { ok: false, error: "That isn't a valid key." };
+    columns.key_override = key;
+  }
+
+  if ("leaderId" in patch) {
+    const leader = patch.leaderId?.trim() || null;
+    if (leader !== null && !UUID_ANY.test(leader)) return { ok: false, error: "Pick a leader from the list." };
+    columns.leader_id = leader;
+  }
+
+  if ("note" in patch) {
+    const note = (patch.note ?? "").trim();
+    if (note.length > 500) return { ok: false, error: "The note is too long (500 characters max)." };
+    columns.note = note || null;
+  }
+
+  return { ok: true, columns };
 }
 
 // ---------------------------------------------------------------------------
