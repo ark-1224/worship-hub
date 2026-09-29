@@ -59,6 +59,9 @@ or path, which gives `syntax error at or near "supabase"`), and click **Run**. D
 1. `supabase/migrations/0001_schema.sql` – tables
 2. `supabase/migrations/0002_auth_and_rls.sql` – permissions (Row Level Security), invite-code gate
 3. `supabase/migrations/0003_save_song.sql` – the "save song + write history" function
+4. `supabase/migrations/0004_lineups.sql` – lineups (Phase 2): service type, adding/reordering songs, realtime
+
+(If you already ran 0001–0003, just run the new 0004.)
 
 Each should finish with "Success. No rows returned". Run them only once; if you need to start over, use
 Database → reset the project or drop the tables first.
@@ -88,6 +91,7 @@ Fill in `.env.local` from Supabase → **Project Settings → API**:
 | `NEXT_PUBLIC_SUPABASE_URL` | Project URL: just `https://xxxx.supabase.co`, with no `/rest/v1/` on the end |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | "Publishable key" (or the legacy `anon` key) |
 | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` locally, your Vercel URL in production |
+| `APP_TIMEZONE` (optional) | Your team's time zone, e.g. `Asia/Manila` (the default) or `America/New_York`. Decides what "today" and "next lineup" mean. Vercel's servers run in UTC, so set it if you're not in Manila time. |
 
 Never use the `service_role` / secret key in this project. `.env.local` is git-ignored, so keys never get committed.
 
